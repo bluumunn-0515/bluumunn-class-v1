@@ -9,7 +9,8 @@ with st.sidebar:
     menu = st.radio(
         "메뉴를 선택하세요.",
         ('홈', '개념 학습', '개념 확인 퀴즈', '전기 장치 찾아보기'),
-        label_visibility="collapsed"
+        label_visibility="collapsed",
+        key="sidebar_menu_radio"
     )
 
 # --- 각 페이지 구현 ---
