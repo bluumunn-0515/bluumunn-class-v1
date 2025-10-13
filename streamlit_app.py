@@ -48,8 +48,8 @@ elif menu == '개념 학습':
             **전기**란 바로 이 '전자'가 이동하면서 발생하는 에너지 현상을 의미합니다.
             """
         )
-        
-        st.image("https://storage.googleapis.com/gweb-aip-demos/proxima/car-app/atom.png", caption="[그림 1] 원자의 구조", width=400)
+        # 이미지 URL을 웹에서 직접 접근 가능한 주소로 변경했습니다.
+        st.image("https://i.imgur.com/8Qk5W6B.png", caption="[그림 1] 원자의 구조", width=400)
         
         st.markdown(
             """
@@ -62,7 +62,7 @@ elif menu == '개념 학습':
             회로에 전구와 같은 부하(일을 하는 장치)가 연결되어 있으면, 전류가 흐르면서 빛이나 열을 발생시킵니다.
             """
         )
-        st.image("https://storage.googleapis.com/gweb-aip-demos/proxima/car-app/circuit.png", caption="[그림 2] 전류와 전자의 이동 방향")
+        st.image("https://i.imgur.com/rN5wD5k.png", caption="[그림 2] 전류와 전자의 이동 방향")
 
     with tab2:
         st.subheader("2. 전압, 전류, 저항의 관계: 옴의 법칙")
@@ -75,7 +75,7 @@ elif menu == '개념 학습':
             """
         )
         
-        st.image("https://storage.googleapis.com/gweb-aip-demos/proxima/car-app/ohms_law.png", caption="[그림 3] 옴의 법칙 (E는 전압 V와 같음)")
+        st.image("https://i.imgur.com/xLKj32b.png", caption="[그림 3] 옴의 법칙 (E는 전압 V와 같음)")
 
         st.success(
             """
@@ -110,20 +110,20 @@ elif menu == '개념 학습':
         with col1:
             st.info("#### 시동 장치 (Starting System)")
             st.write("엔진을 처음 가동시키기 위해 크랭크축에 회전력을 공급하는 장치입니다. (예: 시동 모터)")
-            st.image("https://storage.googleapis.com/gweb-aip-demos/proxima/car-app/starter_motor.png", caption="시동 모터")
+            st.image("https://i.imgur.com/w2Yg0oT.png", caption="시동 모터")
 
             st.info("#### 등화 장치 (Lighting System)")
             st.write("야간 주행 시 시야를 확보하고, 다른 차에게 신호를 보내는 장치입니다. (예: 전조등, 방향지시등)")
-            st.image("https://storage.googleapis.com/gweb-aip-demos/proxima/car-app/headlight.png", caption="전조등")
+            st.image("https://i.imgur.com/pYvj7B5.png", caption="전조등")
         
         with col2:
             st.info("#### 충전 장치 (Charging System)")
             st.write("엔진이 작동하는 동안 전기를 생산하여 배터리를 충전하고, 각 부품에 전원을 공급하는 장치입니다. (예: 발전기)")
-            st.image("https://storage.googleapis.com/gweb-aip-demos/proxima/car-app/alternator.png", caption="발전기 (알터네이터)")
+            st.image("https://i.imgur.com/X2d2aZk.png", caption="발전기 (알터네이터)")
 
             st.info("#### 점화 장치 (Ignition System)")
             st.write("가솔린 엔진의 연소실 내 압축된 혼합기에 전기 불꽃을 일으켜 점화하는 장치입니다. (예: 점화 코일, 점화 플러그)")
-            st.image("https://storage.googleapis.com/gweb-aip-demos/proxima/car-app/spark_plug.png", caption="점화 플러그")
+            st.image("https://i.imgur.com/Xl9k7aQ.png", caption="점화 플러그")
 
 
 # 3. 개념 확인 퀴즈 페이지 (뼈대)
