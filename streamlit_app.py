@@ -1,4 +1,7 @@
 import streamlit as st
+import base64
+from pathlib import Path
+import re
 
 # --- Page settings and custom CSS ---
 st.set_page_config(
@@ -10,10 +13,6 @@ st.set_page_config(
 # CSS code to change the app's color theme and font
 def load_css():
     # Load local fonts from the fonts/ directory and embed them as base64 so Streamlit uses them.
-    import base64
-    from pathlib import Path
-    import re
-
     fonts_dir = Path(__file__).parent / "fonts"
 
     def font_data_uri(font_path: Path):
@@ -119,83 +118,88 @@ def load_css():
             color: white; /* Default text color to white */
         }}
 
-        /* Sidebar */
+        /* Sidebar styling */
         [data-testid="stSidebar"] {{
             background-color: #001f3f; /* Dark Navy */
         }}
-        /* All text inside sidebar to white */
+        /* All text inside sidebar to white and adjusted size */
         [data-testid="stSidebar"] * {{
             color: white !important;
+            font-size: 20px !important; 
+        }}
+        /* Sidebar title specific size */
+        [data-testid="stSidebar"] h1 {{
+             font-size: 26px !important;
         }}
         
-        /* Main title (h1) */
+        /* Main title (h1) - Keep large */
         h1 {{
+            font-size: 3.0em !important;
             color: #FFFFFF; /* White */
         }}
 
-        /* Subtitles (h2, h3) - changed to white */
-        h2, h3 {{
-            color: #FFFFFF !important; /* White */
-            font-size: 1.7em !important;
+        /* Subtitles (h2, h3) - Keep large */
+        h2 {{
+            font-size: 2.4em !important;
+            color: #FFFFFF !important;
+        }}
+        h3 {{
+            font-size: 2.0em !important;
+            color: #FFFFFF !important;
         }}
         
         h5 {{
-            font-size: 1.2em !important;
+            font-size: 1.5em !important; /* Slightly larger for info boxes */
         }}
 
-        /* Increase default text size for most elements (except h1 which remains the main title)
-           original ~17px -> ~21px for a 2-step increase */
-        body, p, li, div, span, a, label, input, textarea, .stMarkdown, .stText, .st-bx {{
-            font-size: 21px !important;
-            line-height: 1.5 !important;
+        /* General text (paragraphs, lists, etc.) - Make larger */
+        body, p, li, div.stMarkdown, div.stText, span, label, input, textarea {{
+            font-size: 24px !important;
+            line-height: 1.6 !important;
+        }}
+        
+        /* Ensure specific Streamlit containers also get the larger font size and consistent font */
+        .st-emotion-cache-1r6slb0, .st-emotion-cache-zt5igj, .st-emotion-cache-1y4p8pa, .st-emotion-cache-ue6h4q, .st-emotion-cache-1g6gooi {{
+            font-size: 24px !important;
+            font-family: {css_font_family} !important;
         }}
 
-        /* Keep h1 as the main large title (do not scale up) */
-        h1 {{
-            font-size: 2.2em !important; /* unchanged or tuned separately */
-        }}
-
-        /* General text (p, li, etc.) - increased size */
-        body, p, li, div, .st-emotion-cache-1r6slb0, .st-emotion-cache-zt5igj, .st-emotion-cache-1y4p8pa, .st-emotion-cache-ue6h4q {{
-            font-size: 17px !important;
-        }}
-
-        /* Tab style - changed to white */
+        /* Tab style - larger font */
         .st-emotion-cache-19rxj06 {{
             border-color: #0074D9;
         }}
         .st-emotion-cache-1hb1d5i {{
             color: white !important; /* Tab title color to white */
-            font-size: 17px;
+            font-size: 24px !important;
         }}
         
-        /* Button style */
+        /* Button style - larger font */
         .stButton>button {{
             background-color: #007BFF; /* Blue */
             color: white;
             border-radius: 8px;
             border: 1px solid #007BFF;
-            font-size: 16px;
+            font-size: 20px !important;
+            padding: 10px 16px;
         }}
         .stButton>button:hover {{
             background-color: #0056b3; /* Darker Blue */
             border: 1px solid #0056b3;
         }}
 
-        /* Info box text color */
-        .st-emotion-cache-1wivap2 div {{
+        /* Info box styling (covers quiz explanation) */
+        .st-emotion-cache-1wivap2 div, .st-emotion-cache-1wivap2 p {{
              color: white !important;
+             font-size: 22px !important;
         }}
         .st-emotion-cache-1wivap2 {{
             background-color: rgba(0, 116, 217, 0.2); /* Translucent Blue */
         }}
         
-        /* Success/Error/Info box text colors */
+        /* Alert box styling (covers success/error) */
         .stAlert p {{
             color: white !important;
-        }}
-        .st-emotion-cache-1g6gooi {{ /* For radio button options */
-            color: white !important;
+            font-size: 22px !important;
         }}
 
     </style>
@@ -331,7 +335,7 @@ elif menu == '개념 학습':
             **전기**란 바로 이 '전자'가 이동하면서 발생하는 에너지 현상을 의미합니다.
             """
         )
-        st.image("https://i.ibb.co/b3pWc2H/atom-structure.png", caption="[그림 1] 원자의 구조", width=400)
+        st.image("https://i.postimg.cc/Y0d9WwVv/atom-structure.png", caption="[그림 1] 원자의 구조", width=400)
         
         st.markdown(
             """
@@ -344,7 +348,7 @@ elif menu == '개념 학습':
             회로에 전구와 같은 부하(일을 하는 장치)가 연결되어 있으면, 전류가 흐르면서 빛이나 열을 발생시킵니다.
             """
         )
-        st.image("https://i.ibb.co/m9sS22T/current-flow.png", caption="[그림 2] 전류와 전자의 이동 방향")
+        st.image("https://i.postimg.cc/MGMY4F3r/current-flow.png", caption="[그림 2] 전류와 전자의 이동 방향")
 
         st.markdown("---")
 
@@ -386,7 +390,7 @@ elif menu == '개념 학습':
             """
         )
         
-        st.image("https://i.ibb.co/3kZ8v0K/ohms-law.png", caption="[그림 3] 옴의 법칙 (E는 전압 V와 같음)")
+        st.image("https://i.postimg.cc/Jn3J37sf/ohms-law.png", caption="[그림 3] 옴의 법칙 (E는 전압 V와 같음)")
 
         st.success(
             """
@@ -421,20 +425,20 @@ elif menu == '개념 학습':
         with col1:
             st.info("#### 시동 장치 (Starting System)")
             st.write("엔진을 처음 가동시키기 위해 크랭크축에 회전력을 공급하는 장치입니다. (예: 시동 모터)")
-            st.image("https://i.ibb.co/FbfVb3X/starter-motor.png", caption="시동 모터")
+            st.image("https://i.postimg.cc/6p2L9f3P/starter-motor.png", caption="시동 모터")
 
             st.info("#### 등화 장치 (Lighting System)")
             st.write("야간 주행 시 시야를 확보하고, 다른 차에게 신호를 보내는 장치입니다. (예: 전조등, 방향지시등)")
-            st.image("https://i.ibb.co/9vPfx8p/headlight.png", caption="전조등")
+            st.image("https://i.postimg.cc/Hxb1T53z/headlight.png", caption="전조등")
         
         with col2:
             st.info("#### 충전 장치 (Charging System)")
             st.write("엔진이 작동하는 동안 전기를 생산하여 배터리를 충전하고, 각 부품에 전원을 공급하는 장치입니다. (예: 발전기)")
-            st.image("https://i.ibb.co/GVMz3B7/alternator.png", caption="발전기 (알터네이터)")
+            st.image("https://i.postimg.cc/tCTw1g2C/alternator.png", caption="발전기 (알터네이터)")
 
             st.info("#### 점화 장치 (Ignition System)")
             st.write("가솔린 엔진의 연소실 내 압축된 혼합기에 전기 불꽃을 일으켜 점화하는 장치입니다. (예: 점화 코일, 점화 플러그)")
-            st.image("https://i.ibb.co/vLYk5Yc/spark-plug.png", caption="점화 플러그")
+            st.image("https://i.postimg.cc/k4GkYqw9/spark-plug.png", caption="점화 플러그")
 
 
 # 3. Concept Check Quiz Page
@@ -510,7 +514,7 @@ elif menu == '전기 장치 찾아보기':
     st.divider()
     st.write("아래 엔진룸 사진에서 번호가 가리키는 부품의 이름을 맞춰보세요!")
 
-    st.image("https://i.ibb.co/hK5B58f/engine-bay.jpg", caption="엔진룸 주요 부품")
+    st.image("https://i.postimg.cc/qR13x0Yw/engine-bay-labels.jpg", caption="엔진룸 주요 부품")
 
     st.markdown("---")
 
