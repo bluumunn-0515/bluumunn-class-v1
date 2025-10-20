@@ -9,89 +9,194 @@ st.set_page_config(
 
 # CSS code to change the app's color theme and font
 def load_css():
-    st.markdown("""
-    <style>
-        /* Import Google Font 'Gothic A1' */
-        @import url('https://fonts.googleapis.com/css2?family=Gothic+A1:wght@400;700&display=swap');
+    # Load local fonts from the fonts/ directory and embed them as base64 so Streamlit uses them.
+    import base64
+    from pathlib import Path
+    import re
 
-        /* Apply the font to the entire app */
-        html, body, [class*="st-"], .st-emotion-cache-1pxazr7 {
-            font-family: 'Gothic A1', sans-serif !important;
-        }
+    fonts_dir = Path(__file__).parent / "fonts"
+
+    def font_data_uri(font_path: Path):
+        try:
+            font_bytes = font_path.read_bytes()
+            b64 = base64.b64encode(font_bytes).decode()
+            suffix = font_path.suffix.lower().lstrip('.')
+            fmt = 'truetype' if suffix == 'ttf' else ('opentype' if suffix == 'otf' else suffix)
+            return f"data:font/{suffix};base64,{b64}", fmt
+        except Exception:
+            return None, None
+
+    # Scan for all TTF/OTF files and create @font-face entries
+    font_face_css = ""
+    discovered_families = []
+    primary_family = None
+
+    if fonts_dir.exists() and fonts_dir.is_dir():
+        # Collect font files and sort by modification time (newest first)
+        font_files = list(fonts_dir.glob('*.ttf')) + list(fonts_dir.glob('*.otf'))
+        font_files.sort(key=lambda p: p.stat().st_mtime, reverse=True)
+        for font_path in font_files:
+            uri, fmt = font_data_uri(font_path)
+            if not uri:
+                continue
+            # Derive a normalized family name from the filename (e.g., NanumGothic-Bold -> NanumGothic)
+            stem = font_path.stem
+            # replace separators with spaces
+            name_with_spaces = re.sub(r'[_\-]+', ' ', stem).strip()
+            # remove common weight/style tokens so different weights map to the same family
+            family = re.sub(r'(?i)\b(?:regular|bold|extrabold|heavy|black|semibold|demi|light|italic|oblique)\b', '', name_with_spaces).strip()
+            # collapse multiple spaces
+            family = re.sub(r'\s{2,}', ' ', family)
+
+            # Infer weight from filename
+            weight = 400
+            lower = stem.lower()
+            if 'extrabold' in lower or 'heavy' in lower or 'black' in lower:
+                weight = 800
+            elif 'bold' in lower:
+                weight = 700
+            elif 'semibold' in lower or 'demi' in lower:
+                weight = 600
+            elif 'light' in lower:
+                weight = 300
+
+            # Add font-face rule
+            font_face_css += (
+                f"@font-face {{font-family: '{family}'; src: url('{uri}') format('{fmt}'); "
+                f"font-weight: {weight}; font-style: normal; font-display: swap;}}\n"
+            )
+
+            if family not in discovered_families:
+                discovered_families.append(family)
+                # first discovered (newest file) becomes the primary family
+                if primary_family is None:
+                    primary_family = family
+
+    # If no local fonts found, fallback to Google font
+    google_import = ""
+    if not font_face_css:
+        google_import = "@import url('https://fonts.googleapis.com/css2?family=Gothic+A1:wght@400;700&display=swap');"
+
+    # Build the global font-family list: place the primary (newest) family first, then others,
+    # then Gothic A1 and sans-serif as fallbacks
+    if discovered_families:
+        # Ensure primary_family appears first, then the rest (unique)
+        ordered = []
+        if primary_family:
+            ordered.append(primary_family)
+        for f in discovered_families:
+            if f not in ordered:
+                ordered.append(f)
+        css_font_family = ', '.join([f"'{f}'" for f in ordered]) + ", 'Gothic A1', sans-serif"
+    else:
+        css_font_family = "'Gothic A1', sans-serif"
+
+    # Primary family for titles (use newest font if available)
+    if primary_family:
+        primary_css_family = f"'{primary_family}'"
+    else:
+        # fallback to first in discovered or Google font
+        primary_css_family = css_font_family.split(',')[0]
+
+    st.markdown(f"""
+    <style>
+        {google_import}
+        {font_face_css}
+
+        /* Apply the font to the entire app (broad selectors to cover all elements) */
+        html, body, [class*="st-"], [data-testid], div, span, p, li, a, button, input, textarea, label {{
+            font-family: {css_font_family} !important;
+        }}
+
+        /* Force title and subheader elements to use the primary (newest) font first */
+        h1, h2, h3, .stTitle, .stSubheader {{
+            font-family: {primary_css_family}, {css_font_family} !important;
+        }}
 
         /* Full app background and default text color */
-        .stApp {
+        .stApp {{
             background: linear-gradient(to bottom, #001f3f, #003366); /* Navy gradient */
             color: white; /* Default text color to white */
-        }
+        }}
 
         /* Sidebar */
-        [data-testid="stSidebar"] {
+        [data-testid="stSidebar"] {{
             background-color: #001f3f; /* Dark Navy */
-        }
+        }}
         /* All text inside sidebar to white */
-        [data-testid="stSidebar"] * {
+        [data-testid="stSidebar"] * {{
             color: white !important;
-        }
+        }}
         
         /* Main title (h1) */
-        h1 {
+        h1 {{
             color: #FFFFFF; /* White */
-        }
+        }}
 
         /* Subtitles (h2, h3) - changed to white */
-        h2, h3 {
+        h2, h3 {{
             color: #FFFFFF !important; /* White */
             font-size: 1.7em !important;
-        }
+        }}
         
-        h5 {
+        h5 {{
             font-size: 1.2em !important;
-        }
+        }}
+
+        /* Increase default text size for most elements (except h1 which remains the main title)
+           original ~17px -> ~21px for a 2-step increase */
+        body, p, li, div, span, a, label, input, textarea, .stMarkdown, .stText, .st-bx {{
+            font-size: 21px !important;
+            line-height: 1.5 !important;
+        }}
+
+        /* Keep h1 as the main large title (do not scale up) */
+        h1 {{
+            font-size: 2.2em !important; /* unchanged or tuned separately */
+        }}
 
         /* General text (p, li, etc.) - increased size */
-        body, p, li, div, .st-emotion-cache-1r6slb0, .st-emotion-cache-zt5igj, .st-emotion-cache-1y4p8pa, .st-emotion-cache-ue6h4q {
+        body, p, li, div, .st-emotion-cache-1r6slb0, .st-emotion-cache-zt5igj, .st-emotion-cache-1y4p8pa, .st-emotion-cache-ue6h4q {{
             font-size: 17px !important;
-        }
+        }}
 
         /* Tab style - changed to white */
-        .st-emotion-cache-19rxj06 {
+        .st-emotion-cache-19rxj06 {{
             border-color: #0074D9;
-        }
-        .st-emotion-cache-1hb1d5i {
+        }}
+        .st-emotion-cache-1hb1d5i {{
             color: white !important; /* Tab title color to white */
             font-size: 17px;
-        }
+        }}
         
         /* Button style */
-        .stButton>button {
+        .stButton>button {{
             background-color: #007BFF; /* Blue */
             color: white;
             border-radius: 8px;
             border: 1px solid #007BFF;
             font-size: 16px;
-        }
-        .stButton>button:hover {
+        }}
+        .stButton>button:hover {{
             background-color: #0056b3; /* Darker Blue */
             border: 1px solid #0056b3;
-        }
+        }}
 
         /* Info box text color */
-        .st-emotion-cache-1wivap2 div {
+        .st-emotion-cache-1wivap2 div {{
              color: white !important;
-        }
-        .st-emotion-cache-1wivap2 {
+        }}
+        .st-emotion-cache-1wivap2 {{
             background-color: rgba(0, 116, 217, 0.2); /* Translucent Blue */
-        }
+        }}
         
         /* Success/Error/Info box text colors */
-        .stAlert p {
+        .stAlert p {{
             color: white !important;
-        }
-        .st-emotion-cache-1g6gooi { /* For radio button options */
+        }}
+        .st-emotion-cache-1g6gooi {{ /* For radio button options */
             color: white !important;
-        }
-
+        }}
 
     </style>
     """, unsafe_allow_html=True)
