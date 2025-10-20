@@ -214,6 +214,27 @@ load_css()
 
 
 # --- Initialize session state ---
+# Collect local images (use them in-order to replace remote examples)
+images_dir = Path(__file__).parent / "images"
+_local_images = []
+if images_dir.exists() and images_dir.is_dir():
+    # keep a stable sort order by filename
+    _local_images = sorted([str(p) for p in images_dir.iterdir() if p.suffix.lower() in ('.png', '.jpg', '.jpeg', '.gif')])
+# mutable index to track consumption order
+_image_state = {"index": 1}
+
+def get_image(default_url: str):
+    """Return the next local image path if available, otherwise the provided default_url.
+
+    This consumes local images in filename sort order so each call to get_image() maps
+    to the next image in the `images/` directory (as requested: "순서대로").
+    """
+    idx = _image_state["index"]
+    if idx < len(_local_images):
+        _image_state["index"] = idx + 1
+        return _local_images[idx]
+    return default_url
+
 if 'current_question' not in st.session_state:
     st.session_state.current_question = 0
     st.session_state.score = 0
@@ -340,7 +361,7 @@ elif menu == '개념 학습':
             **전기**란 바로 이 '전자'가 이동하면서 발생하는 에너지 현상을 의미합니다.
             """
         )
-        st.image("https://i.postimg.cc/Y0d9WwVv/atom-structure.png", caption="[그림 1] 원자의 구조", width=400)
+        st.image(str(images_dir / "1.jpg"), caption="[그림 1] 원자의 구조", width=400)
         
         st.markdown(
             """
@@ -353,7 +374,7 @@ elif menu == '개념 학습':
             회로에 전구와 같은 부하(일을 하는 장치)가 연결되어 있으면, 전류가 흐르면서 빛이나 열을 발생시킵니다.
             """
         )
-        st.image("https://i.postimg.cc/MGMY4F3r/current-flow.png", caption="[그림 2] 전류와 전자의 이동 방향")
+        st.image(get_image("https://i.postimg.cc/MGMY4F3r/current-flow.png"), caption="[그림 2] 전류와 전자의 이동 방향")
 
         st.markdown("---")
 
@@ -395,7 +416,7 @@ elif menu == '개념 학습':
             """
         )
         
-        st.image("https://i.postimg.cc/Jn3J37sf/ohms-law.png", caption="[그림 3] 옴의 법칙 (E는 전압 V와 같음)")
+        st.image(get_image("https://i.postimg.cc/Jn3J37sf/ohms-law.png"), caption="[그림 3] 옴의 법칙 (E는 전압 V와 같음)")
 
         st.success(
             """
@@ -430,20 +451,20 @@ elif menu == '개념 학습':
         with col1:
             st.info("#### 시동 장치 (Starting System)")
             st.write("엔진을 처음 가동시키기 위해 크랭크축에 회전력을 공급하는 장치입니다. (예: 시동 모터)")
-            st.image("https://i.postimg.cc/6p2L9f3P/starter-motor.png", caption="시동 모터")
+            st.image(get_image("https://i.postimg.cc/6p2L9f3P/starter-motor.png"), caption="시동 모터")
 
             st.info("#### 등화 장치 (Lighting System)")
             st.write("야간 주행 시 시야를 확보하고, 다른 차에게 신호를 보내는 장치입니다. (예: 전조등, 방향지시등)")
-            st.image("https://i.postimg.cc/Hxb1T53z/headlight.png", caption="전조등")
+            st.image(get_image("https://i.postimg.cc/Hxb1T53z/headlight.png"), caption="전조등")
         
         with col2:
             st.info("#### 충전 장치 (Charging System)")
             st.write("엔진이 작동하는 동안 전기를 생산하여 배터리를 충전하고, 각 부품에 전원을 공급하는 장치입니다. (예: 발전기)")
-            st.image("https://i.postimg.cc/tCTw1g2C/alternator.png", caption="발전기 (알터네이터)")
+            st.image(get_image("https://i.postimg.cc/tCTw1g2C/alternator.png"), caption="발전기 (알터네이터)")
 
             st.info("#### 점화 장치 (Ignition System)")
             st.write("가솔린 엔진의 연소실 내 압축된 혼합기에 전기 불꽃을 일으켜 점화하는 장치입니다. (예: 점화 코일, 점화 플러그)")
-            st.image("https://i.postimg.cc/k4GkYqw9/spark-plug.png", caption="점화 플러그")
+            st.image(get_image("https://i.postimg.cc/k4GkYqw9/spark-plug.png"), caption="점화 플러그")
 
 
 # 3. Concept Check Quiz Page
@@ -519,7 +540,7 @@ elif menu == '전기 장치 찾아보기':
     st.divider()
     st.write("아래 엔진룸 사진에서 번호가 가리키는 부품의 이름을 맞춰보세요!")
 
-    st.image("https://i.postimg.cc/qR13x0Yw/engine-bay-labels.jpg", caption="엔진룸 주요 부품")
+    st.image(get_image("https://i.postimg.cc/qR13x0Yw/engine-bay-labels.jpg"), caption="엔진룸 주요 부품")
 
     st.markdown("---")
 
