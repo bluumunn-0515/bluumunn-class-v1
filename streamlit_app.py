@@ -111,6 +111,11 @@ def load_css():
         h1, h2, h3, .stTitle, .stSubheader {{
             font-family: {primary_css_family}, {css_font_family} !important;
         }}
+        
+        /* Widen the main content area */
+        .block-container {{
+            max-width: 1100px !important;
+        }}
 
         /* Full app background and default text color */
         .stApp {{
