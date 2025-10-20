@@ -7,7 +7,7 @@ st.set_page_config(
     layout="centered" 
 )
 
-# CSS code to change the app's color theme to a blue scheme and apply a new font
+# CSS code to change the app's color theme and font
 def load_css():
     st.markdown("""
     <style>
@@ -19,30 +19,30 @@ def load_css():
             font-family: 'Gothic A1', sans-serif !important;
         }
 
-        /* Full app background */
+        /* Full app background and default text color */
         .stApp {
             background: linear-gradient(to bottom, #001f3f, #003366); /* Navy gradient */
-            color: white;
+            color: white; /* Default text color to white */
         }
 
         /* Sidebar */
         [data-testid="stSidebar"] {
             background-color: #001f3f; /* Dark Navy */
-            color: white;
         }
-        [data-testid="stSidebar"] .st-emotion-cache-16txtl3 {
-            color: #7FDBFF; /* Sky Blue Title */
+        /* All text inside sidebar to white */
+        [data-testid="stSidebar"] * {
+            color: white !important;
         }
         
-        /* Main title (h1) - no size change */
+        /* Main title (h1) */
         h1 {
             color: #FFFFFF; /* White */
         }
 
-        /* Subtitles (h2, h3) - increased size */
+        /* Subtitles (h2, h3) - changed to white */
         h2, h3 {
-            color: #7FDBFF; /* Sky Blue */
-            font-size: 1.7em !important; /* Relative size adjustment using em */
+            color: #FFFFFF !important; /* White */
+            font-size: 1.7em !important;
         }
         
         h5 {
@@ -54,16 +54,16 @@ def load_css():
             font-size: 17px !important;
         }
 
-        /* Tab style */
+        /* Tab style - changed to white */
         .st-emotion-cache-19rxj06 {
             border-color: #0074D9;
         }
         .st-emotion-cache-1hb1d5i {
-            color: white;
-            font-size: 17px; /* Tab title size */
+            color: white !important; /* Tab title color to white */
+            font-size: 17px;
         }
         
-        /* Button style - font size added */
+        /* Button style */
         .stButton>button {
             background-color: #007BFF; /* Blue */
             color: white;
@@ -76,10 +76,22 @@ def load_css():
             border: 1px solid #0056b3;
         }
 
-        /* Info box (st.info) */
+        /* Info box text color */
+        .st-emotion-cache-1wivap2 div {
+             color: white !important;
+        }
         .st-emotion-cache-1wivap2 {
             background-color: rgba(0, 116, 217, 0.2); /* Translucent Blue */
         }
+        
+        /* Success/Error/Info box text colors */
+        .stAlert p {
+            color: white !important;
+        }
+        .st-emotion-cache-1g6gooi { /* For radio button options */
+            color: white !important;
+        }
+
 
     </style>
     """, unsafe_allow_html=True)
@@ -88,7 +100,6 @@ load_css()
 
 
 # --- Initialize session state ---
-# Initialize session_state to store quiz progress.
 if 'current_question' not in st.session_state:
     st.session_state.current_question = 0
     st.session_state.score = 0
@@ -184,9 +195,9 @@ quiz_data = [
 
 # 1. Home Page
 if menu == '홈':
-    st.title('자동차 전기전자제어 학습 도우미')
-    st.divider() # Divider line
-    st.subheader('1단원: 자동차 전기전자 개요를 인터랙티브하게 학습해 보세요.')
+    st.title('자동차 전기전자제어 학습 길라잡이')
+    st.divider() 
+    st.subheader('1단원: 자동차 전기전자 개요에 대해 알아봅시다.')
     
     st.write("""
     이 앱은 '자동차 전기전자제어' 교과의 첫 단원인 **'자동차 전기전자 개요'**의 내용을 학습하는 데 도움을 주기 위해 만들어졌습니다.  
@@ -203,7 +214,6 @@ elif menu == '개념 학습':
     st.title('📖 개념 학습: 자동차 전기전자 개요')
     st.divider()
 
-    # Organize content using tabs
     tab1, tab2, tab3 = st.tabs(["⚡ 전기와 전류의 기초", "💡 옴의 법칙 (V=IR)", "🚗 자동차 전기 장치"])
 
     with tab1:
@@ -216,7 +226,6 @@ elif menu == '개념 학습':
             **전기**란 바로 이 '전자'가 이동하면서 발생하는 에너지 현상을 의미합니다.
             """
         )
-        # Image URLs changed to directly accessible web addresses.
         st.image("https://i.ibb.co/b3pWc2H/atom-structure.png", caption="[그림 1] 원자의 구조", width=400)
         
         st.markdown(
@@ -232,9 +241,8 @@ elif menu == '개념 학습':
         )
         st.image("https://i.ibb.co/m9sS22T/current-flow.png", caption="[그림 2] 전류와 전자의 이동 방향")
 
-        st.markdown("---") # Add a divider line
+        st.markdown("---")
 
-        # --- Add a mini-quiz section ---
         st.subheader("🧐 잠깐 퀴즈!")
         st.write("일상생활의 예시를 통해 교류와 직류를 구분해 봅시다.")
 
@@ -244,7 +252,7 @@ elif menu == '개념 학습':
              '둘 다 교류(AC)입니다.', 
              '가정용은 교류(AC), 자동차용은 직류(DC)입니다.', 
              '가정용은 직류(DC), 자동차용은 교류(AC)입니다.'),
-            index=None, # Set to nothing selected before user interaction
+            index=None,
         )
 
         if st.button('정답 확인'):
@@ -261,7 +269,6 @@ elif menu == '개념 학습':
                 st.warning("답을 선택해주세요!")
             else:
                 st.error('아쉽지만 틀렸어요. 다시 한번 생각해 보세요! 🤔')
-        # --- End of quiz section ---
 
     with tab2:
         st.subheader("2. 전압, 전류, 저항의 관계: 옴의 법칙")
@@ -330,13 +337,11 @@ elif menu == '개념 확인 퀴즈':
     st.title('✍️ 개념 확인 퀴즈')
     st.divider()
 
-    # Function to reset the quiz
     def reset_quiz():
         st.session_state.current_question = 0
         st.session_state.score = 0
         st.session_state.answered_correctly = False
 
-    # When all quizzes are finished
     if st.session_state.current_question >= len(quiz_data):
         st.success(f"🎉 모든 퀴즈를 완료했습니다! 당신의 점수는: {st.session_state.score} / {len(quiz_data)}")
         st.balloons()
@@ -344,35 +349,31 @@ elif menu == '개념 확인 퀴즈':
             reset_quiz()
             st.rerun()
     else:
-        # Get the current question
         question_data = quiz_data[st.session_state.current_question]
         
         st.subheader(f"문제 {st.session_state.current_question + 1} / {len(quiz_data)}")
         
-        # If the answer is not correct, show the question and submit button
         if not st.session_state.get('answered_correctly', False):
             user_answer = None
-            # Change input method based on question type
             if question_data["type"] == "multiple_choice":
                 user_answer = st.radio(
                     question_data["question"],
                     question_data["options"],
                     index=None,
-                    key=f"q_{st.session_state.current_question}" # Unique key for each question
+                    key=f"q_{st.session_state.current_question}"
                 )
             elif question_data["type"] == "short_answer":
                 user_answer = st.text_input(
                     question_data["question"],
                     placeholder="정답을 입력하세요.",
-                    key=f"q_{st.session_state.current_question}" # Unique key for each question
+                    key=f"q_{st.session_state.current_question}"
                 )
 
-            # Submit button
             if st.button("제출하기"):
                 correct_answer = question_data["answer"]
                 
                 is_correct = False
-                if user_answer: # Check if the user has entered/selected something
+                if user_answer: 
                     if question_data["type"] == "short_answer":
                         is_correct = user_answer.strip() == correct_answer
                     else:
@@ -381,36 +382,33 @@ elif menu == '개념 확인 퀴즈':
                 if is_correct:
                     st.session_state.score += 1
                     st.session_state.answered_correctly = True
-                    st.rerun() # Rerun immediately if correct to show the next step
+                    st.rerun() 
                 
                 elif user_answer is None or user_answer == "":
                      st.warning("답을 입력하거나 선택해주세요.")
                 else:
                     st.error("오답입니다. 다시 한번 생각해 보세요. 💡")
 
-        # If the answer is correct, show the explanation and next question button
         if st.session_state.get('answered_correctly', False):
             st.success("정답입니다! 👍")
             st.info(f"**해설:** {question_data['explanation']}")
             
             if st.button("다음 문제로 이동"):
                 st.session_state.current_question += 1
-                st.session_state.answered_correctly = False # Reset state for the next question
+                st.session_state.answered_correctly = False
                 st.rerun()
 
 
-# 4. Find Electrical Components Page (Implementation)
+# 4. Find Electrical Components Page
 elif menu == '전기 장치 찾아보기':
     st.title('🔍 전기 장치 찾아보기')
     st.divider()
     st.write("아래 엔진룸 사진에서 번호가 가리키는 부품의 이름을 맞춰보세요!")
 
-    # Display image (image with numbers)
     st.image("https://i.ibb.co/hK5B58f/engine-bay.jpg", caption="엔진룸 주요 부품")
 
     st.markdown("---")
 
-    # Answer data
     answers = {
         "①": "배터리 (Battery)",
         "②": "퓨즈 박스 (Fuse Box)",
@@ -418,10 +416,8 @@ elif menu == '전기 장치 찾아보기':
         "④": "엔진 커버 (Engine Cover)"
     }
     
-    # Options data
     options = ["배터리 (Battery)", "퓨즈 박스 (Fuse Box)", "엔진 커버 (Engine Cover)", "워셔액 주입구 (Washer Fluid Inlet)", "브레이크액 저장소 (Brake Fluid Reservoir)", "라디에이터 (Radiator)"]
 
-    # 2x2 grid layout
     col1, col2 = st.columns(2)
 
     with col1:
@@ -465,33 +461,28 @@ elif menu == '전기 장치 찾아보기':
     st.markdown("---")
 
     if st.button("결과 확인하기"):
-        # Grading logic
         score = 0
         
         st.subheader("채점 결과")
 
-        # Grade question 1
         if q1_answer == answers["①"]:
             st.success("✅ 1번 정답! **배터리**는 시동을 걸고, 각종 전기 장치에 전원을 공급하는 핵심 '전기 장치'입니다.")
             score += 1
         else:
             st.error(f"❌ 1번 오답! 정답은 **{answers['①']}** 입니다. ①번은 배터리입니다.")
 
-        # Grade question 2
         if q2_answer == answers["②"]:
             st.success("✅ 2번 정답! **퓨즈 박스**는 과전류로부터 전기 회로와 부품을 보호하는 중요한 '전기 장치'입니다.")
             score += 1
         else:
             st.error(f"❌ 2번 오답! 정답은 **{answers['②']}** 입니다. ②번은 퓨즈 박스입니다.")
             
-        # Grade question 3
         if q3_answer == answers["③"]:
             st.success("✅ 3번 정답! **워셔액 주입구** 자체는 전기 장치가 아니지만, 전기를 사용하는 '워셔액 펌프'와 연결됩니다.")
             score += 1
         else:
             st.error(f"❌ 3번 오답! 정답은 **{answers['③']}** 입니다. ③번은 워셔액 주입구입니다.")
 
-        # Grade question 4
         if q4_answer == "아니오":
             st.success("✅ 4번 정답! 맞습니다. **엔진 커버**는 엔진을 보호하는 '기관 장치'의 일부로, 전기 장치가 아닙니다.")
             score += 1
