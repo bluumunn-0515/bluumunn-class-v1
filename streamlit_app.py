@@ -217,22 +217,44 @@ load_css()
 # Collect local images (use them in-order to replace remote examples)
 images_dir = Path(__file__).parent / "images"
 _local_images = []
+
+# 💡 수정된 부분: 정렬 키 함수를 개선하여 문자열 경로를 처리
+def sort_key(p):
+    try:
+        # 파일 경로 문자열에서 파일 이름(Path(p).stem)의 숫자 부분을 추출하여 정렬
+        stem = Path(p).stem
+        # 파일 이름에 숫자가 포함되어 있을 경우 그 숫자를 기준으로 정렬
+        match = re.search(r'\d+', stem)
+        if match:
+            return int(match.group(0))
+        return float('inf')
+    except Exception:
+        return float('inf')
+
+
 if images_dir.exists() and images_dir.is_dir():
-    # keep a stable sort order by filename
-    _local_images = sorted([str(p) for p in images_dir.iterdir() if p.suffix.lower() in ('.png', '.jpg', '.jpeg', '.gif')])
-# mutable index to track consumption order
-_image_state = {"index": 1}
+    # Path 객체 리스트를 먼저 만들고
+    path_objects = [p for p in images_dir.iterdir() if p.suffix.lower() in ('.png', '.jpg', '.jpeg', '.gif')]
+    # 정렬 키를 이용해 경로 문자열로 변환하여 저장
+    # sort_key가 문자열 경로를 Path 객체로 변환하여 stem을 얻도록 수정했기 때문에 아래와 같이 정렬합니다.
+    _local_images = sorted([str(p) for p in path_objects], key=sort_key)
+
+
+# 💡 수정된 부분: mutable index를 0으로 초기화
+_image_state = {"index": 0}
 
 def get_image(default_url: str):
     """Return the next local image path if available, otherwise the provided default_url.
 
-    This consumes local images in filename sort order so each call to get_image() maps
-    to the next image in the `images/` directory (as requested: "순서대로").
+    This consumes local images in filename sort order (0, 1, 2, ...) so each call to get_image() maps
+    to the next image in the `images/` directory.
     """
     idx = _image_state["index"]
     if idx < len(_local_images):
+        result = _local_images[idx]
         _image_state["index"] = idx + 1
-        return _local_images[idx]
+        return result
+    # 인덱스를 초과하면 기본 URL을 반환하되, 다음 호출을 위해 인덱스를 더 이상 증가시키지 않음
     return default_url
 
 if 'current_question' not in st.session_state:
@@ -335,7 +357,7 @@ if menu == '홈':
     st.subheader('1단원: 자동차 전기전자 개요에 대해 알아봅시다.')
     
     st.write("""
-    이 앱은 '자동차 전기전자제어' 교과의 첫 단원인 **'자동차 전기전자 개요'**의 내용을 학습하는 데 도움을 주기 위해 만들어졌습니다.  
+    이 앱은 '자동차 전기전자제어' 교과의 첫 단원인 **'자동차 전기전자 개요'**의 내용을 학습하는 데 도움을 주기 위해 만들어졌습니다.  
     왼쪽 사이드바에서 원하는 학습 메뉴를 선택하여 진행해 주세요.
     """)
     
@@ -346,6 +368,9 @@ if menu == '홈':
 
 # 2. Concept Learning Page
 elif menu == '개념 학습':
+    # 💡 수정된 부분: 이미지 인덱스를 다시 0으로 초기화하여 처음부터 사용하도록 합니다.
+    _image_state["index"] = 0 
+    
     st.title('📖 개념 학습: 자동차 전기전자 개요')
     st.divider()
 
@@ -361,7 +386,7 @@ elif menu == '개념 학습':
             **전기**란 바로 이 '전자'가 이동하면서 발생하는 에너지 현상을 의미합니다.
             """
         )
-        st.image(str(images_dir / "1.jpg"), caption="[그림 1] 원자의 구조", width=400)
+        st.image(get_image("https://i.postimg.cc/9F4Zt6H0/atom.jpg"), caption="[그림 1] 원자의 구조", width=400) # 0번째 이미지
         
         st.markdown(
             """
@@ -374,7 +399,7 @@ elif menu == '개념 학습':
             회로에 전구와 같은 부하(일을 하는 장치)가 연결되어 있으면, 전류가 흐르면서 빛이나 열을 발생시킵니다.
             """
         )
-        st.image(get_image("https://i.postimg.cc/MGMY4F3r/current-flow.png"), caption="[그림 2] 전류와 전자의 이동 방향")
+        st.image(get_image("https://i.postimg.cc/tJn4h0zZ/current-flow.jpg"), caption="[그림 2] 전류와 전자의 이동 방향") # 1번째 이미지
 
         st.markdown("---")
 
@@ -397,7 +422,7 @@ elif menu == '개념 학습':
                     """
                     **해설:**
                     - **가정용 전기(교류, AC):** 발전소에서 만들어진 전기는 먼 거리를 효율적으로 보내기 위해 교류 형태를 사용합니다.
-                    - **자동차 배터리(직류, DC):** 배터리는 화학 에너지를 전기 에너지로 저장하는데, 이때는 한 방향으로만 흐르는 직류 형태를 띕니다.
+                    - **자동차 배터리(직류, DC):** 배터리는 화학 에너지를 전기 에너지로 저장하는데, 이때는 한 방향으로만 흐르는 직류 형태를 띱니다.
                     """
                 )
             elif question is None:
@@ -416,7 +441,7 @@ elif menu == '개념 학습':
             """
         )
         
-        st.image(get_image("https://i.postimg.cc/Jn3J37sf/ohms-law.png"), caption="[그림 3] 옴의 법칙 (E는 전압 V와 같음)")
+        st.image(get_image("https://i.postimg.cc/Jn3J37sf/ohms-law.png"), caption="[그림 3] 옴의 법칙 (E는 전압 V와 같음)") # 2번째 이미지
 
         st.success(
             """
@@ -451,20 +476,20 @@ elif menu == '개념 학습':
         with col1:
             st.info("#### 시동 장치 (Starting System)")
             st.write("엔진을 처음 가동시키기 위해 크랭크축에 회전력을 공급하는 장치입니다. (예: 시동 모터)")
-            st.image(get_image("https://i.postimg.cc/6p2L9f3P/starter-motor.png"), caption="시동 모터")
+            st.image(get_image("https://i.postimg.cc/6p2L9f3P/starter-motor.png"), caption="시동 모터") # 3번째 이미지
 
             st.info("#### 등화 장치 (Lighting System)")
             st.write("야간 주행 시 시야를 확보하고, 다른 차에게 신호를 보내는 장치입니다. (예: 전조등, 방향지시등)")
-            st.image(get_image("https://i.postimg.cc/Hxb1T53z/headlight.png"), caption="전조등")
+            st.image(get_image("https://i.postimg.cc/Hxb1T53z/headlight.png"), caption="전조등") # 4번째 이미지
         
         with col2:
             st.info("#### 충전 장치 (Charging System)")
             st.write("엔진이 작동하는 동안 전기를 생산하여 배터리를 충전하고, 각 부품에 전원을 공급하는 장치입니다. (예: 발전기)")
-            st.image(get_image("https://i.postimg.cc/tCTw1g2C/alternator.png"), caption="발전기 (알터네이터)")
+            st.image(get_image("https://i.postimg.cc/tCTw1g2C/alternator.png"), caption="발전기 (알터네이터)") # 5번째 이미지
 
             st.info("#### 점화 장치 (Ignition System)")
             st.write("가솔린 엔진의 연소실 내 압축된 혼합기에 전기 불꽃을 일으켜 점화하는 장치입니다. (예: 점화 코일, 점화 플러그)")
-            st.image(get_image("https://i.postimg.cc/k4GkYqw9/spark-plug.png"), caption="점화 플러그")
+            st.image(get_image("https://i.postimg.cc/k4GkYqw9/spark-plug.png"), caption="점화 플러그") # 6번째 이미지
 
 
 # 3. Concept Check Quiz Page
@@ -486,20 +511,26 @@ elif menu == '개념 확인 퀴즈':
     else:
         question_data = quiz_data[st.session_state.current_question]
         
+        # 퀴즈 문제 번호를 h3 스타일로 크게 표시
         st.subheader(f"문제 {st.session_state.current_question + 1} / {len(quiz_data)}")
         
+        # 질문 텍스트를 st.write로 별도 출력하여 24px의 일반 텍스트 스타일을 적용
+        st.write(f"**{question_data['question']}**")
+
         if not st.session_state.get('answered_correctly', False):
             user_answer = None
             if question_data["type"] == "multiple_choice":
+                # 라벨을 빈 문자열로 설정하여 질문 텍스트가 중복되거나 작게 나오는 것을 방지
                 user_answer = st.radio(
-                    question_data["question"],
+                    "", 
                     question_data["options"],
                     index=None,
                     key=f"q_{st.session_state.current_question}"
                 )
             elif question_data["type"] == "short_answer":
+                 # 라벨을 빈 문자열로 설정하여 질문 텍스트가 중복되거나 작게 나오는 것을 방지
                 user_answer = st.text_input(
-                    question_data["question"],
+                    "", 
                     placeholder="정답을 입력하세요.",
                     key=f"q_{st.session_state.current_question}"
                 )
@@ -508,9 +539,10 @@ elif menu == '개념 확인 퀴즈':
                 correct_answer = question_data["answer"]
                 
                 is_correct = False
-                if user_answer: 
+                if user_answer is not None and user_answer != "": 
                     if question_data["type"] == "short_answer":
-                        is_correct = user_answer.strip() == correct_answer
+                        # 단답형은 공백 제거 및 소문자 비교 (혹시 모를 대소문자 문제 방지)
+                        is_correct = user_answer.strip().lower() == correct_answer.lower()
                     else:
                         is_correct = user_answer == correct_answer
 
@@ -519,8 +551,8 @@ elif menu == '개념 확인 퀴즈':
                     st.session_state.answered_correctly = True
                     st.rerun() 
                 
-                elif user_answer is None or user_answer == "":
-                     st.warning("답을 입력하거나 선택해주세요.")
+                elif user_answer is None or (question_data["type"] == "short_answer" and user_answer.strip() == ""):
+                    st.warning("답을 입력하거나 선택해주세요.")
                 else:
                     st.error("오답입니다. 다시 한번 생각해 보세요. 💡")
 
@@ -536,11 +568,14 @@ elif menu == '개념 확인 퀴즈':
 
 # 4. Find Electrical Components Page
 elif menu == '전기 장치 찾아보기':
+    # 💡 수정된 부분: 이미지 인덱스를 다시 7로 설정하여 마지막 이미지를 사용하도록 합니다.
+    _image_state["index"] = 7
+    
     st.title('🔍 전기 장치 찾아보기')
     st.divider()
     st.write("아래 엔진룸 사진에서 번호가 가리키는 부품의 이름을 맞춰보세요!")
 
-    st.image(get_image("https://i.postimg.cc/qR13x0Yw/engine-bay-labels.jpg"), caption="엔진룸 주요 부품")
+    st.image(get_image("https://i.postimg.cc/qR13x0Yw/engine-bay-labels.jpg"), caption="엔진룸 주요 부품") # 7번째 이미지
 
     st.markdown("---")
 
@@ -556,40 +591,48 @@ elif menu == '전기 장치 찾아보기':
     col1, col2 = st.columns(2)
 
     with col1:
+        st.write("1. 사진 속 ①번 부품의 이름은 무엇일까요?")
         q1_answer = st.selectbox(
-            "**1. 사진 속 ①번 부품의 이름은 무엇일까요?**",
+            "_", # 라벨을 "_"로 설정하여 st.write와 구분
             options,
             index=None,
             placeholder="부품 이름을 선택하세요.",
-            key="q1_device"
+            key="q1_device",
+            label_visibility="collapsed" # 라벨을 숨겨서 중복을 방지
         )
 
     with col2:
+        st.write("2. 사진 속 ②번 부품의 이름은 무엇일까요?")
         q2_answer = st.selectbox(
-            "**2. 사진 속 ②번 부품의 이름은 무엇일까요?**",
+            "__", # 라벨을 "__"로 설정하여 st.write와 구분
             options,
             index=None,
             placeholder="부품 이름을 선택하세요.",
-            key="q2_device"
+            key="q2_device",
+            label_visibility="collapsed" # 라벨을 숨겨서 중복을 방지
         )
     
     col3, col4 = st.columns(2)
     with col3:
+        st.write("3. 사진 속 ③번 부품의 이름은 무엇일까요?")
         q3_answer = st.selectbox(
-            "**3. 사진 속 ③번 부품의 이름은 무엇일까요?**",
+            "___", # 라벨을 "___"로 설정하여 st.write와 구분
             options,
             index=None,
             placeholder="부품 이름을 선택하세요.",
-            key="q3_device"
+            key="q3_device",
+            label_visibility="collapsed" # 라벨을 숨겨서 중복을 방지
         )
 
     with col4:
+        st.write("4. 사진 속 ④번 부품은 '전기 장치'일까요?")
         q4_answer = st.selectbox(
-            "**4. 사진 속 ④번 부품은 '전기 장치'일까요?**",
+            "____", # 라벨을 "____"로 설정하여 st.write와 구분
             ("예", "아니오"),
             index=None,
             placeholder="예/아니오를 선택하세요.",
-            key="q4_device"
+            key="q4_device",
+            label_visibility="collapsed" # 라벨을 숨겨서 중복을 방지
         )
 
 
@@ -657,4 +700,3 @@ elif menu == '단원 마무리':
     
     오늘 배운 기초 개념이 다음 단원 학습의 중요한 발판이 될 것입니다.
     """, icon="📖")
-
