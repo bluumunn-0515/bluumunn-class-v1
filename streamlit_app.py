@@ -15,6 +15,11 @@ def load_css():
     # Load local fonts from the fonts/ directory and embed them as base64 so Streamlit uses them.
     fonts_dir = Path(__file__).parent / "fonts"
 
+    font_face_css = ""
+    discovered_families = []
+    primary_family = None
+
+    # 폰트 Base64 인코딩 함수 (로컬 파일 접근 실패 시 무시됨)
     def font_data_uri(font_path: Path):
         try:
             font_bytes = font_path.read_bytes()
@@ -25,29 +30,20 @@ def load_css():
         except Exception:
             return None, None
 
-    # Scan for all TTF/OTF files and create @font-face entries
-    font_face_css = ""
-    discovered_families = []
-    primary_family = None
-
+    # 로컬 폰트 검색 및 Base64 인코딩 시도
     if fonts_dir.exists() and fonts_dir.is_dir():
-        # Collect font files and sort by modification time (newest first)
         font_files = list(fonts_dir.glob('*.ttf')) + list(fonts_dir.glob('*.otf'))
         font_files.sort(key=lambda p: p.stat().st_mtime, reverse=True)
         for font_path in font_files:
             uri, fmt = font_data_uri(font_path)
             if not uri:
                 continue
-            # Derive a normalized family name from the filename (e.g., NanumGothic-Bold -> NanumGothic)
+            
             stem = font_path.stem
-            # replace separators with spaces
             name_with_spaces = re.sub(r'[_\-]+', ' ', stem).strip()
-            # remove common weight/style tokens so different weights map to the same family
             family = re.sub(r'(?i)\b(?:regular|bold|extrabold|heavy|black|semibold|demi|light|italic|oblique)\b', '', name_with_spaces).strip()
-            # collapse multiple spaces
             family = re.sub(r'\s{2,}', ' ', family)
-
-            # Infer weight from filename
+            
             weight = 400
             lower = stem.lower()
             if 'extrabold' in lower or 'heavy' in lower or 'black' in lower:
@@ -59,7 +55,6 @@ def load_css():
             elif 'light' in lower:
                 weight = 300
 
-            # Add font-face rule
             font_face_css += (
                 f"@font-face {{font-family: '{family}'; src: url('{uri}') format('{fmt}'); "
                 f"font-weight: {weight}; font-style: normal; font-display: swap;}}\n"
@@ -67,35 +62,30 @@ def load_css():
 
             if family not in discovered_families:
                 discovered_families.append(family)
-                # first discovered (newest file) becomes the primary family
                 if primary_family is None:
                     primary_family = family
 
-    # If no local fonts found, fallback to Google font
-    google_import = ""
-    if not font_face_css:
-        google_import = "@import url('https://fonts.googleapis.com/css2?family=Gothic+A1:wght@400;700&display=swap');"
+    # Google font를 Fallback 또는 주력으로 사용
+    google_import = "@import url('https://fonts.googleapis.com/css2?family=Gothic+A1:wght@400;700&display=swap');"
 
-    # Build the global font-family list: place the primary (newest) family first, then others,
-    # then Gothic A1 and sans-serif as fallbacks
+    # 폰트 패밀리 리스트 구성
     if discovered_families:
-        # Ensure primary_family appears first, then the rest (unique)
         ordered = []
         if primary_family:
             ordered.append(primary_family)
         for f in discovered_families:
             if f not in ordered:
                 ordered.append(f)
+        # 💡 안정화: 로컬 폰트 -> Gothic A1 -> sans-serif 순서
         css_font_family = ', '.join([f"'{f}'" for f in ordered]) + ", 'Gothic A1', sans-serif"
     else:
+        # 💡 웹 환경에서 로컬 폰트 로드 실패 시: Gothic A1이 주력
         css_font_family = "'Gothic A1', sans-serif"
-
-    # Primary family for titles (use newest font if available)
+        
     if primary_family:
         primary_css_family = f"'{primary_family}'"
     else:
-        # fallback to first in discovered or Google font
-        primary_css_family = css_font_family.split(',')[0]
+        primary_css_family = "'Gothic A1'" # Gothic A1을 타이틀 기본 폰트로 설정
 
     st.markdown(f"""
     <style>
@@ -213,48 +203,41 @@ def load_css():
 load_css()
 
 
-# --- Initialize session state ---
+# --- Initialize session state (이미지 로딩 로직 수정) ---
 # Collect local images (use them in-order to replace remote examples)
 images_dir = Path(__file__).parent / "images"
 _local_images = []
 
-# 💡 수정된 부분: 정렬 키 함수를 개선하여 문자열 경로를 처리
-def sort_key(p):
+# 💡 수정된 부분: Path 객체를 받아 파일명(숫자)으로 정렬하는 함수로 재정의
+def sort_key(p: Path):
     try:
-        # 파일 경로 문자열에서 파일 이름(Path(p).stem)의 숫자 부분을 추출하여 정렬
-        stem = Path(p).stem
-        # 파일 이름에 숫자가 포함되어 있을 경우 그 숫자를 기준으로 정렬
-        match = re.search(r'\d+', stem)
+        # 파일 이름(stem)에서 숫자만 추출하여 정수로 변환 후 정렬
+        match = re.search(r'\d+', p.stem)
         if match:
             return int(match.group(0))
-        return float('inf')
+        # 숫자가 없는 파일은 무한대로 처리하여 순서 맨 뒤로 보냄
+        return float('inf') 
     except Exception:
         return float('inf')
 
 
 if images_dir.exists() and images_dir.is_dir():
-    # Path 객체 리스트를 먼저 만들고
+    # Path 객체 리스트를 생성
     path_objects = [p for p in images_dir.iterdir() if p.suffix.lower() in ('.png', '.jpg', '.jpeg', '.gif')]
-    # 정렬 키를 이용해 경로 문자열로 변환하여 저장
-    # sort_key가 문자열 경로를 Path 객체로 변환하여 stem을 얻도록 수정했기 때문에 아래와 같이 정렬합니다.
-    _local_images = sorted([str(p) for p in path_objects], key=sort_key)
+    # Path 객체 리스트를 정렬 키를 이용해 정렬한 후, 문자열 경로로 변환하여 저장
+    # st.image는 문자열 경로를 잘 처리합니다.
+    _local_images = sorted([str(p) for p in path_objects], key=lambda p: sort_key(Path(p)))
 
 
-# 💡 수정된 부분: mutable index를 0으로 초기화
 _image_state = {"index": 0}
 
 def get_image(default_url: str):
-    """Return the next local image path if available, otherwise the provided default_url.
-
-    This consumes local images in filename sort order (0, 1, 2, ...) so each call to get_image() maps
-    to the next image in the `images/` directory.
-    """
+    """Return the next local image path if available, otherwise the provided default_url."""
     idx = _image_state["index"]
     if idx < len(_local_images):
         result = _local_images[idx]
         _image_state["index"] = idx + 1
         return result
-    # 인덱스를 초과하면 기본 URL을 반환하되, 다음 호출을 위해 인덱스를 더 이상 증가시키지 않음
     return default_url
 
 if 'current_question' not in st.session_state:
@@ -368,7 +351,7 @@ if menu == '홈':
 
 # 2. Concept Learning Page
 elif menu == '개념 학습':
-    # 💡 수정된 부분: 이미지 인덱스를 다시 0으로 초기화하여 처음부터 사용하도록 합니다.
+    # 💡 수정된 부분: 이미지 인덱스를 다시 0으로 초기화
     _image_state["index"] = 0 
     
     st.title('📖 개념 학습: 자동차 전기전자 개요')
@@ -568,7 +551,7 @@ elif menu == '개념 확인 퀴즈':
 
 # 4. Find Electrical Components Page
 elif menu == '전기 장치 찾아보기':
-    # 💡 수정된 부분: 이미지 인덱스를 다시 7로 설정하여 마지막 이미지를 사용하도록 합니다.
+    # 💡 수정된 부분: 이미지 인덱스를 7로 설정 (마지막 이미지를 사용)
     _image_state["index"] = 7
     
     st.title('🔍 전기 장치 찾아보기')
@@ -593,46 +576,46 @@ elif menu == '전기 장치 찾아보기':
     with col1:
         st.write("1. 사진 속 ①번 부품의 이름은 무엇일까요?")
         q1_answer = st.selectbox(
-            "_", # 라벨을 "_"로 설정하여 st.write와 구분
+            "_", 
             options,
             index=None,
             placeholder="부품 이름을 선택하세요.",
             key="q1_device",
-            label_visibility="collapsed" # 라벨을 숨겨서 중복을 방지
+            label_visibility="collapsed" 
         )
 
     with col2:
         st.write("2. 사진 속 ②번 부품의 이름은 무엇일까요?")
         q2_answer = st.selectbox(
-            "__", # 라벨을 "__"로 설정하여 st.write와 구분
+            "__", 
             options,
             index=None,
             placeholder="부품 이름을 선택하세요.",
             key="q2_device",
-            label_visibility="collapsed" # 라벨을 숨겨서 중복을 방지
+            label_visibility="collapsed" 
         )
     
     col3, col4 = st.columns(2)
     with col3:
         st.write("3. 사진 속 ③번 부품의 이름은 무엇일까요?")
         q3_answer = st.selectbox(
-            "___", # 라벨을 "___"로 설정하여 st.write와 구분
+            "___", 
             options,
             index=None,
             placeholder="부품 이름을 선택하세요.",
             key="q3_device",
-            label_visibility="collapsed" # 라벨을 숨겨서 중복을 방지
+            label_visibility="collapsed" 
         )
 
     with col4:
         st.write("4. 사진 속 ④번 부품은 '전기 장치'일까요?")
         q4_answer = st.selectbox(
-            "____", # 라벨을 "____"로 설정하여 st.write와 구분
+            "____", 
             ("예", "아니오"),
             index=None,
             placeholder="예/아니오를 선택하세요.",
             key="q4_device",
-            label_visibility="collapsed" # 라벨을 숨겨서 중복을 방지
+            label_visibility="collapsed" 
         )
 
 
